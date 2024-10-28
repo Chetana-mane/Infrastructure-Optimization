@@ -1,0 +1,497 @@
+import pandas as pd
+import numpy as np
+from pulp import LpMaximize, LpProblem, LpVariable, lpSum, value
+import folium
+from geopy.distance import geodesic
+import matplotlib.pyplot as plt
+from folium.plugins import MarkerCluster
+import pandas as pd
+from sklearn.preprocessing import LabelEncoder
+from scipy.spatial.distance import euclidean
+from geopy.distance import geodesic
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.cluster import KMeans
+import folium
+from folium.plugins import HeatMap
+from folium import IFrame
+from folium.plugins import FloatImage
+
+# Function to transform a postcode into a numeric array
+def convert_postcode_to_numeric(postcode):
+    encoder = LabelEncoder()
+    char_list = list(postcode)
+    numeric_list = encoder.fit_transform(char_list)
+    return numeric_list
+
+# Function to clean and parse coordinates
+def parse_coordinates(coord_str):
+    coord_str = coord_str.replace('(', '').replace(')', '').strip()  # Remove parentheses and whitespace
+    lat, lon = map(float, coord_str.split(','))
+    return lat, lon
+
+# Load the petrol station data
+dataset_path = 'C:/Users/............/Final_Petrol_Stations_Dataset.csv'
+stations_df = pd.read_csv(dataset_path)
+
+# Adding the district postcodes to a separate DataFrame
+district_data = {
+    'District': ['Redbridge', 'Coxhill', 'Millbrook', 'Shirley', 'Freemantle', 'Banister and Polygon', 'Bargate', 'Bassett', 
+                 'Portswood', 'Swaythling', 'Bitterne Park', 'Woolston', 'Harefield', 'Sholing', 'Thornhill'],
+    'Postcode': ['SO15 0AF', 'SO16 8HY', 'SO16 4XE', 'SO15 5SD', 'SO15 3BQ', 'SO15 2XY', 'SO14 2AD', 'SO16 3UF',
+                 'SO17 1UD', 'SO18 2NU', 'SO18 2PE', 'SO19 9FU', 'SO18 6AZ', 'SO19 8FZ', 'SO19 6GH'],
+    'Coordinates': ['50.911, -1.456', '50.932, -1.450', '50.936, -1.439', '50.926, -1.441', '50.909, -1.426', 
+                    '50.917, -1.419', '50.909, -1.398', '50.940, -1.406', '50.931, -1.398', '50.947, -1.377',
+                    '50.945, -1.372', '50.888, -1.375', '50.918, -1.351', '50.883, -1.347', '50.894, -1.347']
+}
+
+district_df = pd.DataFrame(district_data)
+
+# Print column names for debugging
+print("Stations DataFrame Columns:", stations_df.columns)
+print("District DataFrame Columns:", district_df.columns)
+
+# Concatenate the petrol stations and district data into one DataFrame for distance calculations
+combined_df = pd.concat([stations_df[['Station Name', 'Postcode', 'Coordinates']], 
+                         district_df.rename(columns={'District': 'Station Name'})])
+
+# Print combined DataFrame columns to verify
+print("Combined DataFrame Columns:", combined_df.columns)
+
+# If you encounter any column name mismatch or error, print the first few rows of each DataFrame
+print("First few rows of Stations DataFrame:\n", stations_df.head())
+print("First few rows of District DataFrame:\n", district_df.head())
+print("First few rows of Combined DataFrame:\n", combined_df.head())
+
+# Re-initialize matrices to store distances including district postcodes
+num_combined = len(combined_df)
+euclidean_dist_matrix_combined = pd.DataFrame(index=combined_df['Station Name'], columns=combined_df['Station Name'])
+haversine_dist_matrix_combined = pd.DataFrame(index=combined_df['Station Name'], columns=combined_df['Station Name'])
+
+# Calculate both Euclidean and Haversine distances between stations and district postcodes
+for idx1 in range(num_combined):
+    for idx2 in range(num_combined):
+        # Calculate the Euclidean distance based on the encoded postcode
+        numeric_postcode_1 = convert_postcode_to_numeric(combined_df.iloc[idx1]['Postcode'])
+        numeric_postcode_2 = convert_postcode_to_numeric(combined_df.iloc[idx2]['Postcode'])
+        euclidean_dist_matrix_combined.iloc[idx1, idx2] = euclidean(numeric_postcode_1, numeric_postcode_2)
+        
+        # Calculate the Haversine distance using geographic coordinates
+        coords1 = parse_coordinates(combined_df.iloc[idx1]['Coordinates'])
+        coords2 = parse_coordinates(combined_df.iloc[idx2]['Coordinates'])
+        haversine_dist_matrix_combined.iloc[idx1, idx2] = geodesic(coords1, coords2).kilometers
+
+# Convert matrices to numeric format for further analysis
+euclidean_dist_matrix_combined = euclidean_dist_matrix_combined.astype(float)
+haversine_dist_matrix_combined = haversine_dist_matrix_combined.astype(float)
+
+# Save the computed distance matrices to CSV files
+euclidean_dist_matrix_combined.to_csv('C:/Users/............/euclidean_dist_matrix_combined.csv')
+haversine_dist_matrix_combined.to_csv('C:/Users/.........../haversine_dist_matrix_combined.csv')
+
+# Display the first few rows of the distance matrices
+print("Sample Euclidean Distance Matrix with Districts Included:")
+print(euclidean_dist_matrix_combined.head())
+
+print("Sample Haversine Distance Matrix with Districts Included:")
+print(haversine_dist_matrix_combined.head())
+
+# The rest of the code remains the same...
+
+# Calculate both Euclidean and Haversine distances between stations and district postcodes
+for idx1 in range(num_combined):
+    for idx2 in range(num_combined):
+        # Calculate the Euclidean distance based on the encoded postcode
+        numeric_postcode_1 = convert_postcode_to_numeric(combined_df.iloc[idx1]['Postcode'])
+        numeric_postcode_2 = convert_postcode_to_numeric(combined_df.iloc[idx2]['Postcode'])
+        euclidean_dist_matrix_combined.iloc[idx1, idx2] = euclidean(numeric_postcode_1, numeric_postcode_2)
+        
+        # Calculate the Haversine distance using geographic coordinates
+        coords1 = parse_coordinates(combined_df.iloc[idx1]['Coordinates'])
+        coords2 = parse_coordinates(combined_df.iloc[idx2]['Coordinates'])
+        haversine_dist_matrix_combined.iloc[idx1, idx2] = geodesic(coords1, coords2).kilometers
+
+# Convert matrices to numeric format for further analysis
+euclidean_dist_matrix_combined = euclidean_dist_matrix_combined.astype(float)
+haversine_dist_matrix_combined = haversine_dist_matrix_combined.astype(float)
+
+# Save the computed distance matrices to CSV files
+euclidean_dist_matrix_combined.to_csv('C:/Users/............/euclidean_dist_matrix_combined.csv')
+haversine_dist_matrix_combined.to_csv('C:/Users/................/haversine_dist_matrix_combined.csv')
+
+# Display the first few rows of the distance matrices
+print("Sample Euclidean Distance Matrix with Districts Included:")
+print(euclidean_dist_matrix_combined.head())
+
+print("Sample Haversine Distance Matrix with Districts Included:")
+print(haversine_dist_matrix_combined.head())
+
+# Generate a heatmap for the Euclidean distance matrix
+plt.figure(figsize=(12, 10))
+sns.heatmap(euclidean_dist_matrix_combined, 
+            cmap="viridis",  # Use a different color palette for better differentiation
+            annot=False, 
+            cbar=True,
+            square=True,  # Make cells square for better proportions
+            linewidths=.5,  # Add light grid lines for separation
+            linecolor='white')  # Grid lines in white for contrast
+# Add labels and title
+plt.title("Euclidean Distance Between Petrol Stations and District Postcodes", fontsize=16)
+plt.xlabel("Stations and Districts", fontsize=12)
+plt.ylabel("Stations and Districts", fontsize=12)
+
+# Rotate x-axis labels for better readability
+plt.xticks(rotation=45, ha="right")
+plt.yticks(rotation=0)
+
+# Improve layout and show the plot
+plt.tight_layout()
+plt.show()
+
+# Generate a heatmap for the Haversine distance matrix
+plt.figure(figsize=(14, 12))  # Increase figure size for better readability
+sns.heatmap(haversine_dist_matrix_combined, 
+            cmap="viridis",  # Use a smooth and visually appealing color palette
+            annot=False,  # Remove annotations for a cleaner look
+            fmt=".2f", 
+            square=True,  # Ensure cells are square
+            linewidths=.5,  # Add light grid lines for separation
+            linecolor='white')  # Use white grid lines for better contrast
+
+# Add labels and title
+plt.title("Haversine Distance Between Petrol Stations and District Postcodes", fontsize=18)
+plt.xlabel("Stations and Districts", fontsize=14)
+plt.ylabel("Stations and Districts", fontsize=14)
+
+# Rotate x-axis labels for better readability
+plt.xticks(rotation=45, ha="right", fontsize=10)
+plt.yticks(rotation=0, fontsize=10)
+
+# Improve layout and show the plot
+plt.tight_layout()
+plt.show()
+
+# Perform KMeans clustering on the Haversine distance matrix
+cluster_model = KMeans(n_clusters=5, random_state=0).fit(haversine_dist_matrix_combined)
+combined_df['Cluster Group'] = cluster_model.labels_
+
+# Separate petrol stations from district postcodes in the combined DataFrame
+stations_df['Cluster Group'] = combined_df.loc[combined_df['Station Name'].isin(stations_df['Station Name']), 'Cluster Group']
+
+# Count the number of stations within each cluster to assess density
+cluster_station_counts = stations_df['Cluster Group'].value_counts().sort_index()
+print(f"Number of Stations in Each Cluster:\n{cluster_station_counts}")
+
+# Identify high-density clusters that might be considered for repurposing
+high_density_clusters = cluster_station_counts[cluster_station_counts > cluster_station_counts.mean()].index
+print(f"High-Density Clusters (Potential Candidates for Closure/Repurposing): {high_density_clusters.tolist()}")
+
+# Identify low-density clusters to ensure ongoing coverage
+low_density_clusters = cluster_station_counts[cluster_station_counts <= cluster_station_counts.mean()].index
+print(f"Low-Density Clusters (Ensure Coverage): {low_density_clusters.tolist()}")
+
+# List the petrol stations along with their postcodes for each cluster
+print("\nPetrol Stations Assigned to Each Cluster:")
+for cluster_id in stations_df['Cluster Group'].unique():
+    print(f"\nCluster {cluster_id}:")
+    cluster_stations = stations_df[stations_df['Cluster Group'] == cluster_id][['Station Name', 'Postcode']]
+    for index, row in cluster_stations.iterrows():
+        print(f"- {row['Station Name']} (Postcode: {row['Postcode']})")
+
+# Visualize the clusters with special attention to high-density and low-density clusters
+plt.figure(figsize=(12, 8))
+sns.scatterplot(
+    x=stations_df['Postcode'],
+    y=stations_df['Cluster Group'],
+    hue=stations_df['Cluster Group'],
+    palette="deep",
+    s=100,
+    legend="full"
+)
+for high_cluster in high_density_clusters:
+    plt.scatter(stations_df[stations_df['Cluster Group'] == high_cluster]['Postcode'],
+                stations_df[stations_df['Cluster Group'] == high_cluster]['Cluster Group'],
+                color='red', label=f'High-Density Cluster {high_cluster}')
+
+for low_cluster in low_density_clusters:
+    plt.scatter(stations_df[stations_df['Cluster Group'] == low_cluster]['Postcode'],
+                stations_df[stations_df['Cluster Group'] == low_cluster]['Cluster Group'],
+                color='blue', label=f'Low-Density Cluster {low_cluster}')
+
+plt.title("Petrol Station Clustering Based on Haversine Distance")
+plt.xlabel("Postcodes")
+plt.ylabel("Cluster Groups")
+plt.xticks(rotation=90)
+plt.tight_layout()
+plt.show()
+
+# Prioritize which clusters should transition to EV charging based on density
+stations_df['EV Transition Priority'] = stations_df['Cluster Group'].apply(lambda x: 'High' if x in low_density_clusters else 'Low')
+
+# Save the analysis results for review by stakeholders
+stations_df.to_csv('C:/Users/............../Clustered_Stations_Analysis_with_Districts.csv', index=False)
+
+# Provide a summary of recommended actions based on the analysis
+print("Recommended Actions for Stakeholders:")
+print(f"1. Evaluate the potential closure or repurposing of stations in high-density clusters: {high_density_clusters.tolist()}")
+print(f"2. Ensure continuous operation of at least one station in low-density clusters: {low_density_clusters.tolist()}")
+print("3. Focus on converting stations in low-density clusters to EV charging facilities.")
+
+# Additional Visualizations
+
+# 1. Geographical Map with Clusters
+# Initialize the map
+m = folium.Map(location=[50.908, -1.404], zoom_start=12)
+
+# Add petrol stations to the map with a blue car icon
+for i, row in stations_df.iterrows():
+    lat, lon = parse_coordinates(row['Coordinates'])
+    folium.Marker(
+        location=[lat, lon],
+        popup=row['Station Name'],
+        icon=folium.Icon(color='blue', icon='car', prefix='fa')
+    ).add_to(m)
+
+# Add district centers to the map with a red flag icon
+for i, row in district_df.iterrows():
+    lat, lon = parse_coordinates(row['Coordinates'])
+    folium.Marker(
+        location=[lat, lon],
+        popup=row['District'],
+        icon=folium.Icon(color='red', icon='flag', prefix='fa')
+    ).add_to(m)
+
+# Create a custom legend
+legend_html = """
+     <div style="position: fixed;
+     bottom: 50px; left: 50px; width: 150px; height: 100px;
+     background-color: white; border:2px solid grey; z-index:9999; font-size:14px;
+     ">&nbsp; Legend <br>
+     &nbsp; <i class="fa fa-car fa-2x" style="color:blue"></i>&nbsp; Petrol Station<br>
+     &nbsp; <i class="fa fa-flag fa-2x" style="color:red"></i>&nbsp; District Center
+     </div>
+     """
+
+m.get_root().html.add_child(folium.Element(legend_html))
+
+# Save the map to an HTML file
+m.save('C:/Users/................/petrol_stations_map_with_legend.html')
+
+# 2. Cluster Density Heatmap
+# Initialize a map centered around the area of interest
+m = folium.Map(location=[50.908, -1.404], zoom_start=12)
+
+# Prepare data for the heatmap (list of [latitude, longitude] pairs)
+heat_data = []
+
+for i, row in stations_df.iterrows():
+    lat, lon = parse_coordinates(row['Coordinates'])
+    # You can control the intensity of each point (default is 1)
+    heat_data.append([lat, lon])
+
+# Add HeatMap layer to the map
+HeatMap(heat_data, radius=15).add_to(m)
+
+# Save the map to an HTML file
+m.save('C:/Users/................/petrol_stations_heatmap.html')
+
+# 3. Pairwise Distance Distribution
+plt.figure(figsize=(10, 6))
+sns.histplot(haversine_dist_matrix_combined.values.flatten(), kde=True, color='blue')
+plt.title('Distribution of Haversine Distances Between Stations and District Centers')
+plt.xlabel('Distance (km)')
+plt.ylabel('Frequency')
+plt.show()
+
+# 4. Cluster Composition Analysis
+plt.figure(figsize=(10, 6))
+sns.countplot(x='Cluster Group', data=stations_df, palette='viridis')
+plt.title('Number of Stations in Each Cluster')
+plt.xlabel('Cluster Group')
+plt.ylabel('Number of Stations')
+plt.show()
+
+#5. Dendrogram
+# Convert the distance matrix into a condensed form required for hierarchical clustering
+condensed_dist_matrix = haversine_dist_matrix_combined.values[np.triu_indices_from(haversine_dist_matrix_combined, k=1)]
+
+# Perform hierarchical clustering using the 'ward' method
+linked = linkage(condensed_dist_matrix, method='ward')
+
+# Plot the dendrogram
+plt.figure(figsize=(15, 10))
+dendrogram(
+    linked,
+    labels=combined_df['Station Name'].values,
+    orientation='top',
+    distance_sort='descending',
+    show_leaf_counts=True
+)
+plt.title('Dendrogram of Petrol Stations and District Postcodes')
+plt.xlabel('Stations and Districts')
+plt.ylabel('Euclidean Distance')
+plt.xticks(rotation=90)
+plt.tight_layout()
+plt.show()
+# Load the distance matrices and filtered petrol stations data
+# Update these paths with the correct file locations on your machine
+station_distances = pd.read_excel("C:/Users/............/distance_matrix_final.xlsx")
+postcode_distances = pd.read_excel("C:/Users/.........../distances_petrol_stations_postcodes1.xlsx")
+filtered_petrol_stations = pd.read_excel("C:/Users/......./petrol_stations_filtered.xlsx")
+
+# Extract the petrol station postcodes from the DataFrame columns (excluding the 'District' column)
+petrol_stations = postcode_distances.columns[1:]  # Assuming 'District' is the first column
+
+# Define the coverage distance values for sensitivity analysis
+coverage_distances = [1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5]  # Different coverage distances to test
+
+# Define the minimum allowable distance between open stations (e.g., 1 km)
+proximity_threshold = 2
+
+# Create a dictionary of station coordinates for proximity checks
+station_coords = {row['Petrol Station Postcodes']: (row['Latitude'], row['Longitude'])
+                  for _, row in filtered_petrol_stations.iterrows()}
+
+# Calculate pairwise distances between all stations to find pairs too close to each other
+close_station_pairs = []
+for i, station1 in enumerate(petrol_stations):
+    for j, station2 in enumerate(petrol_stations):
+        if i < j:
+            # Calculate the distance between the two stations
+            distance = geodesic(station_coords[station1], station_coords[station2]).kilometers
+            if distance < proximity_threshold:
+                close_station_pairs.append((station1, station2))
+
+# Results container for sensitivity analysis
+sensitivity_results = []
+
+# Perform sensitivity analysis for each coverage distance
+for coverage_distance in coverage_distances:
+    # Define the optimization problem for each distance
+    problem = LpProblem("Maximize_Coverage", LpMaximize)
+
+    # Decision variables: whether to keep each petrol station open (1) or close (0)
+    station_vars = LpVariable.dicts("Station", petrol_stations, 0, 1, cat="Binary")
+
+    # Objective: Maximize the number of covered districts (at least one station within coverage distance)
+    covered_districts = []
+
+    # Iterate over each district to create coverage constraints
+    for i, row in postcode_distances.iterrows():
+        district = row['District']
+        coverage_expression = lpSum(
+            station_vars[station] for station in petrol_stations if row[station] <= coverage_distance
+        )
+        # Constraint: Each district should be covered by at least one open station within the coverage distance
+        covered_districts.append(coverage_expression >= 1)
+
+    # Set the objective function to maximize total coverage
+    problem += lpSum(covered_districts), f"MaximizeTotalCoverage_x_{coverage_distance}"
+
+    # Constraint: Only 40% of petrol stations can remain open
+    problem += lpSum(station_vars[station] for station in petrol_stations) <= np.ceil(0.4 * len(petrol_stations))
+
+    # Additional Constraint: Ensure at least 7 stations remain open
+    problem += lpSum(station_vars[station] for station in petrol_stations) >= 7, "AtLeastSevenStationsOpen"
+
+    # Proximity Constraint: Ensure stations that are too close are not both open
+    for station1, station2 in close_station_pairs:
+        problem += station_vars[station1] + station_vars[station2] <= 1, f"ProximityConstraint_{station1}_{station2}"
+
+    # Solve the optimization problem
+    problem.solve()
+
+    # Extract the results
+    open_stations = [station for station in petrol_stations if value(station_vars[station]) == 1]
+    num_covered_districts = sum(1 for constraint in covered_districts if value(constraint))
+
+    # Merge open stations list with filtered stations to get their names and postcodes
+    open_station_details = filtered_petrol_stations[filtered_petrol_stations['Petrol Station Postcodes'].isin(open_stations)][['Station Name', 'Petrol Station Postcodes']]
+    
+    # Store results for each coverage distance
+    sensitivity_results.append({
+        'Coverage Distance': coverage_distance,
+        'Open Stations': len(open_stations),
+        'Covered Districts': num_covered_districts,
+        'Open Stations List': open_stations,
+        'Open Station Details': open_station_details
+    })
+
+# Convert results into a DataFrame for easy analysis
+sensitivity_df = pd.DataFrame(sensitivity_results)
+
+# Display the sensitivity analysis results
+print("\nSensitivity Analysis Results:")
+print(sensitivity_df[['Coverage Distance', 'Open Stations', 'Covered Districts']].to_string(index=False))
+
+# Save sensitivity analysis results to an Excel file
+sensitivity_df.to_excel('sensitivity_analysis_results1.xlsx', index=False)
+print("Sensitivity analysis results have been saved as 'sensitivity_analysis_results.xlsx'.")
+
+# Create a combined table showing station names and postcodes for every x value
+combined_station_details = pd.concat([pd.DataFrame(result['Open Station Details']).assign(Coverage_Distance=result['Coverage Distance']) for result in sensitivity_results], ignore_index=True)
+
+# Display the combined station details table
+print("\nCombined Station Details for Each Coverage Distance:")
+print(combined_station_details.to_string(index=False))
+
+# Save the combined station details to an Excel file
+combined_station_details.to_excel('combined_station_details.xlsx', index=False)
+print("Combined station details have been saved as 'combined_station_details.xlsx'.")
+
+# -----------------------------------
+# Visualization of Best Result
+# -----------------------------------
+
+# Determine which x value gives the best coverage
+best_result = sensitivity_df.loc[sensitivity_df['Covered Districts'].idxmax()]
+best_x = best_result['Coverage Distance']
+best_open_stations = best_result['Open Stations List']
+
+# Create a DataFrame to show the status of each station (Open/Closed) for the best x value
+results_df = pd.DataFrame({
+    'Petrol Station': petrol_stations,
+    'Status': ['Open' if station in best_open_stations else 'Closed' for station in petrol_stations]
+})
+
+# Merge the results with the filtered petrol stations to get the coordinates for visualization
+merged_df = pd.merge(results_df, filtered_petrol_stations, left_on='Petrol Station', right_on='Petrol Station Postcodes')
+
+# Initialize the map centered around the average location of all stations
+m = folium.Map(location=[merged_df['Latitude'].mean(), merged_df['Longitude'].mean()], zoom_start=13)
+
+# Add a marker cluster to the map for open stations only
+marker_cluster = MarkerCluster().add_to(m)
+for idx, row in merged_df.iterrows():
+    if row['Status'] == 'Open':
+        folium.Marker(
+            location=[row['Latitude'], row['Longitude']],
+            popup=f"{row['Station Name']} - {row['Status']}",
+            icon=folium.Icon(color='green')
+        ).add_to(marker_cluster)
+
+# Save the map to an HTML file
+m.save('best_coverage_petrol_stations_map.html')
+print(f"Map for best coverage (x = {best_x} km) has been saved as 'best_coverage_petrol_stations_map.html'")
+
+# -----------------------------------
+# Additional Visualizations
+# -----------------------------------
+
+# Bar Plot: Covered Districts vs. Coverage Distance
+plt.figure(figsize=(10, 6))
+plt.bar(sensitivity_df['Coverage Distance'], sensitivity_df['Covered Districts'], color='skyblue')
+plt.xlabel('Coverage Distance (x in km)')
+plt.ylabel('Number of Covered Districts')
+plt.title('Covered Districts vs. Coverage Distance')
+plt.grid(True)
+plt.show()
+
+# Bar Plot: Open Stations vs. Coverage Distance
+plt.figure(figsize=(10, 6))
+plt.bar(sensitivity_df['Coverage Distance'], sensitivity_df['Open Stations'], color='lightcoral')
+plt.xlabel('Coverage Distance (x in km)')
+plt.ylabel('Number of Open Stations')
+plt.title('Open Stations vs. Coverage Distance')
+plt.grid(True)
+plt.show()
