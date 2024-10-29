@@ -15,6 +15,9 @@ Here are summary points for showcasing the project:
 
 4. **Distance Matrix Calculations**
    - **Euclidean Distance Matrix**: Provided insights into spatial patterns of proximity.
+
+   ![Ecludian Distance matrix Heatmap](https://github.com/user-attachments/assets/5b47cafa-9c98-4894-b1ef-ca684318d3b8)
+
    - **Haversine Distance Matrix**: More accurate for real-world distances on Earth’s surface, essential for realistic planning.
 
 5. **Clustering Analysis**
