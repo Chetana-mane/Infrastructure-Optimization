@@ -3,6 +3,7 @@ Here are summary points for showcasing the project:
 1. **Objective and Strategic Direction**
    - **Objective**: Transition from ICE vehicles to electric vehicles (EVs), focusing on strategies for sustainable and accessible EV infrastructure.
    - **Strategic Decisions**: Covered aspects like infrastructure development, policy incentives, market trends, social impact, technology, and stakeholder engagement.
+<img width="352" alt="image" src="https://github.com/user-attachments/assets/7a7b06b3-8a34-4180-9d54-2c4d9054f3da">
 
 2. **Operational Research and AI/ML Integration**
    - **Key Techniques**: Used genetic algorithms, mixed-integer linear programming (MILP), GIS-based MCDA, and simulated annealing for optimally locating EV charging stations.
